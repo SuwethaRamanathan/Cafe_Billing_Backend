@@ -1,6 +1,7 @@
 import express from "express";
 import Menu from "../models/Menu.js";
 import Order from "../models/Order.js";
+import Grocery from "../models/Grocery.js";
 import {
   sendThresholdMail,
   sendOutOfStockMail
@@ -64,6 +65,41 @@ router.post("/", async (req, res) => {
 
       await item.save();
     }
+
+// ===== RAW MATERIAL DEDUCTION =====
+    const ingredientTotals = {};
+
+    for (let cartItem of items) {
+      const menuItem = await Menu.findById(cartItem._id)
+        .populate("recipe.grocery");
+
+      for (let ing of menuItem.recipe) {
+        const gid = ing.grocery._id.toString();
+        const usedQty = ing.qty * cartItem.qty;
+
+        if (!ingredientTotals[gid]) ingredientTotals[gid] = 0;
+        ingredientTotals[gid] += usedQty;
+      }
+    }
+
+    // check grocery stock
+    for (let gid in ingredientTotals) {
+      const grocery = await Grocery.findById(gid);
+      if (grocery.quantity < ingredientTotals[gid]) {
+        return res.status(400).json({
+          msg: `Insufficient raw material: ${grocery.name}`
+        });
+      }
+    }
+
+    // deduct grocery
+    for (let gid in ingredientTotals) {
+      await Grocery.findByIdAndUpdate(gid, {
+        $inc: { quantity: -ingredientTotals[gid] },
+        lastStockUpdatedDate: new Date()
+      });
+    }
+
 
     res.json({
       success: true,

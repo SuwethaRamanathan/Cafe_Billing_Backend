@@ -9,10 +9,24 @@ const grocerySchema = new mongoose.Schema({
     type: String, 
     required: true
   },
-  quantity: {
+  // quantity: {
+  //   type: Number,
+  //   required: true,
+  //   default: 0
+  // },
+    purchaseUnit: {
+    type: String,
+    required: true
+  },
+
+  baseUnit: {
+    type: String,
+    required: true
+  },
+
+  conversionFactor: {
     type: Number,
-    required: true,
-    default: 0
+    required: true
   },
   lastPurchasedDate: {
     type: Date

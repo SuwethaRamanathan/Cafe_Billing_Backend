@@ -1,5 +1,17 @@
 import mongoose from "mongoose";
 
+const recipeSchema = new mongoose.Schema({
+  grocery: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Grocery",
+    required: true
+  },
+  qty: {
+    type: Number,
+    required: true
+  }
+});
+
 const menuSchema = new mongoose.Schema({
   name: {
     type: String,

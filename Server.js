@@ -15,7 +15,7 @@ import settingsRoutes from "./routes/settingsRoutes.js"
 
 connectDB(); 
 
-// startRawMaterialScheduler();
+startRawMaterialScheduler();
 
 const app = express();
 
