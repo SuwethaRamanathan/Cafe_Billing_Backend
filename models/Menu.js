@@ -39,6 +39,8 @@ const menuSchema = new mongoose.Schema({
     required: true
   },
 
+  recipe: [recipeSchema],
+
   thresholdAlertSent: {
     type: Boolean,
     default: false
