@@ -9,9 +9,20 @@ const router = express.Router();
 const upload = multer({ dest: "uploads/" });
 
 
+// router.get("/", async (req, res) => {
+//   const groceries = await Grocery.find();
+//   res.json(groceries);
+// });
+
 router.get("/", async (req, res) => {
   const groceries = await Grocery.find();
-  res.json(groceries);
+
+  const converted = groceries.map(g => ({
+    ...g.toObject(),
+    displayQty: g.quantity / g.conversionFactor
+  }));
+
+  res.json(converted);
 });
 
 router.put("/:id", async (req, res) => {
@@ -34,18 +45,49 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+// router.post("/", async (req, res) => {
+//   const { name, unit, quantity, lastPurchasedDate } = req.body;
+
+//   const grocery = await Grocery.create({
+//     name,
+//     unit,
+//     quantity,
+//     lastPurchasedDate,
+//     lastStockUpdatedDate: new Date()
+//   });
+
+//   res.json(grocery);
+// });
+
 router.post("/", async (req, res) => {
-  const { name, unit, quantity, lastPurchasedDate } = req.body;
+  try {
+    const {
+      name,
+      purchaseUnit,
+      baseUnit,
+      conversionFactor,
+      quantity,
+      lastPurchasedDate
+    } = req.body;
 
-  const grocery = await Grocery.create({
-    name,
-    unit,
-    quantity,
-    lastPurchasedDate,
-    lastStockUpdatedDate: new Date()
-  });
+    // convert purchase qty → base qty
+    const baseQty = quantity * conversionFactor;
 
-  res.json(grocery);
+    const grocery = await Grocery.create({
+      name,
+      purchaseUnit,
+      baseUnit,
+      conversionFactor,
+      quantity: baseQty, // stored in base unit
+      lastPurchasedDate,
+      lastStockUpdatedDate: new Date()
+    });
+
+    res.json(grocery);
+  } catch (err) {
+    console.error("CREATE ERROR:", err);
+    res.status(500).json({ msg: "Create failed" });
+  }
 });
 
 router.delete("/:id", async (req, res) => {

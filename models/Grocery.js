@@ -15,7 +15,6 @@ const grocerySchema = new mongoose.Schema({
     default: 0
   },
 
-  
     purchaseUnit: {
     type: String,
     required: true
