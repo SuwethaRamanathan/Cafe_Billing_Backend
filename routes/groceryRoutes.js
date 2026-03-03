@@ -14,15 +14,35 @@ const upload = multer({ dest: "uploads/" });
 //   res.json(groceries);
 // });
 
+// router.get("/", async (req, res) => {
+//   const groceries = await Grocery.find();
+
+//   const converted = groceries.map(g => ({
+//     ...g.toObject(),
+//     displayQty: g.quantity / g.conversionFactor
+//   }));
+
+//   res.json(converted);
+// });
+
 router.get("/", async (req, res) => {
-  const groceries = await Grocery.find();
+  try {
+    const groceries = await Grocery.find();
 
-  const converted = groceries.map(g => ({
-    ...g.toObject(),
-    displayQty: g.quantity / g.conversionFactor
-  }));
+    const converted = groceries.map(g => {
+      const factor = g.conversionFactor || 1;   // ✅ fallback
 
-  res.json(converted);
+      return {
+        ...g.toObject(),
+        displayQty: factor ? g.quantity / factor : g.quantity
+      };
+    });
+
+    res.json(converted);
+  } catch (err) {
+    console.error("Error fetching groceries:", err);
+    res.status(500).json({ msg: "Server error" });
+  }
 });
 
 router.put("/:id", async (req, res) => {
