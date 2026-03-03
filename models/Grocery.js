@@ -5,10 +5,10 @@ const grocerySchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  unit: {
-    type: String, 
-    required: true
-  },
+  // unit: {
+  //   type: String, 
+  //   required: true
+  // },
   quantity: {
     type: Number,
     required: true,
