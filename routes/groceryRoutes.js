@@ -8,29 +8,12 @@ const router = express.Router();
 
 const upload = multer({ dest: "uploads/" });
 
-
-// router.get("/", async (req, res) => {
-//   const groceries = await Grocery.find();
-//   res.json(groceries);
-// });
-
-// router.get("/", async (req, res) => {
-//   const groceries = await Grocery.find();
-
-//   const converted = groceries.map(g => ({
-//     ...g.toObject(),
-//     displayQty: g.quantity / g.conversionFactor
-//   }));
-
-//   res.json(converted);
-// });
-
 router.get("/", async (req, res) => {
   try {
     const groceries = await Grocery.find();
 
     const converted = groceries.map(g => {
-      const factor = g.conversionFactor || 1;   // ✅ fallback
+      const factor = g.conversionFactor || 1;   
 
       return {
         ...g.toObject(),
@@ -65,20 +48,6 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// router.post("/", async (req, res) => {
-//   const { name, unit, quantity, lastPurchasedDate } = req.body;
-
-//   const grocery = await Grocery.create({
-//     name,
-//     unit,
-//     quantity,
-//     lastPurchasedDate,
-//     lastStockUpdatedDate: new Date()
-//   });
-
-//   res.json(grocery);
-// });
-
 router.post("/", async (req, res) => {
   try {
     const {
@@ -90,7 +59,6 @@ router.post("/", async (req, res) => {
       lastPurchasedDate
     } = req.body;
 
-    // convert purchase qty → base qty
     const baseQty = quantity * conversionFactor;
 
     const grocery = await Grocery.create({
@@ -98,7 +66,7 @@ router.post("/", async (req, res) => {
       purchaseUnit,
       baseUnit,
       conversionFactor,
-      quantity: baseQty, // stored in base unit
+      quantity: baseQty, 
       lastPurchasedDate,
       lastStockUpdatedDate: new Date()
     });

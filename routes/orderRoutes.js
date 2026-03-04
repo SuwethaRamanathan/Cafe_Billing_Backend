@@ -6,6 +6,7 @@ import {
   sendThresholdMail,
   sendOutOfStockMail
 } from "../utils/menuStockAlerts.js";
+import { reduceStock } from "../utils/reduceStock.js";
 
 const router = express.Router();
 
@@ -65,41 +66,43 @@ router.post("/", async (req, res) => {
 
       await item.save();
     }
-
-// ===== RAW MATERIAL DEDUCTION =====
-    const ingredientTotals = {};
-
+   
     for (let cartItem of items) {
-      const menuItem = await Menu.findById(cartItem._id)
-        .populate("recipe.grocery");
+  const menuItem = await Menu.findById(cartItem._id);
+  await reduceStock(menuItem, cartItem.qty);
+}
 
-      for (let ing of menuItem.recipe) {
-        const gid = ing.grocery._id.toString();
-        const usedQty = ing.qty * cartItem.qty;
+    // const ingredientTotals = {};
 
-        if (!ingredientTotals[gid]) ingredientTotals[gid] = 0;
-        ingredientTotals[gid] += usedQty;
-      }
-    }
+    
+    // for (let cartItem of items) {
+    //   const menuItem = await Menu.findById(cartItem._id)
+    //     .populate("recipe.grocery");
 
-    // check grocery stock
-    for (let gid in ingredientTotals) {
-      const grocery = await Grocery.findById(gid);
-      if (grocery.quantity < ingredientTotals[gid]) {
-        return res.status(400).json({
-          msg: `Insufficient raw material: ${grocery.name}`
-        });
-      }
-    }
+    //   for (let ing of menuItem.recipe) {
+    //     const gid = ing.grocery._id.toString();
+    //     const usedQty = ing.qty * cartItem.qty;
 
-    // deduct grocery
-    for (let gid in ingredientTotals) {
-      await Grocery.findByIdAndUpdate(gid, {
-        $inc: { quantity: -ingredientTotals[gid] },
-        lastStockUpdatedDate: new Date()
-      });
-    }
+    //     if (!ingredientTotals[gid]) ingredientTotals[gid] = 0;
+    //     ingredientTotals[gid] += usedQty;
+    //   }
+    // }
 
+    // for (let gid in ingredientTotals) {
+    //   const grocery = await Grocery.findById(gid);
+    //   if (grocery.quantity < ingredientTotals[gid]) {
+    //     return res.status(400).json({
+    //       msg: `Insufficient raw material: ${grocery.name}`
+    //     });
+    //   }
+    // }
+
+    // for (let gid in ingredientTotals) {
+    //   await Grocery.findByIdAndUpdate(gid, {
+    //     $inc: { quantity: -ingredientTotals[gid] },
+    //     lastStockUpdatedDate: new Date()
+    //   });
+    // }
 
     res.json({
       success: true,
