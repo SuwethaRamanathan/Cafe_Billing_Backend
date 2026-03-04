@@ -17,7 +17,6 @@ export async function reduceStock(menuItem, orderedQty) {
     ingredientTotals[groceryId] += requiredQty;
   }
 
-  // Check stock first
   for (const gid in ingredientTotals) {
 
     const grocery = await Grocery.findById(gid);
@@ -31,7 +30,6 @@ export async function reduceStock(menuItem, orderedQty) {
     }
   }
 
-  // Reduce stock
   for (const gid in ingredientTotals) {
 
     await Grocery.findByIdAndUpdate(

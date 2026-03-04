@@ -5,7 +5,7 @@ const grocerySchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  
+
   quantity: {
     type: Number,
     required: true,
@@ -26,7 +26,6 @@ const grocerySchema = new mongoose.Schema({
     type: Number,
     required: true
   },
-
 
   lastPurchasedDate: {
     type: Date
