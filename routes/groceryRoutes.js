@@ -130,32 +130,32 @@ router.delete("/:id", async (req, res) => {
   res.json({ message: "Grocery deleted" });
 });
 
-let baseUnit = "";
-let factor = conversionFactor;
+// let baseUnit = "";
+// let factor = conversionFactor;
 
-if (purchaseUnit === "Litre") {
-  baseUnit = "ml";
-  factor = 1000;
-}
+// if (purchaseUnit === "Litre") {
+//   baseUnit = "ml";
+//   factor = 1000;
+// }
 
-if (purchaseUnit === "Kilogram") {
-  baseUnit = "g";
-  factor = 1000;
-}
+// if (purchaseUnit === "Kilogram") {
+//   baseUnit = "g";
+//   factor = 1000;
+// }
 
-if (purchaseUnit === "Gram") {
-  baseUnit = "g";
-  factor = 1;
-}
+// if (purchaseUnit === "Gram") {
+//   baseUnit = "g";
+//   factor = 1;
+// }
 
-if (purchaseUnit === "Millilitre") {
-  baseUnit = "ml";
-  factor = 1;
-}
+// if (purchaseUnit === "Millilitre") {
+//   baseUnit = "ml";
+//   factor = 1;
+// }
 
-if (purchaseUnit === "Packets") {
-  baseUnit = "piece";
-}
+// if (purchaseUnit === "Packets") {
+//   baseUnit = "piece";
+// }
 
 router.post("/import", upload.single("file"), async (req, res) => {
   try {
