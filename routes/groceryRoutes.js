@@ -1,5 +1,6 @@
 import express from "express";
 import Grocery from "../models/Grocery.js";
+import Unit from "../models/Unit.js";
 import multer from "multer";
 import ExcelJS from "exceljs";
 import fs from "fs";
@@ -8,25 +9,6 @@ const router = express.Router();
 
 const upload = multer({ dest: "uploads/" });
 
-// router.get("/", async (req, res) => {
-//   try {
-//     const groceries = await Grocery.find();
-
-//     const converted = groceries.map(g => {
-//       const factor = g.conversionFactor || 1;   
-
-//       return {
-//         ...g.toObject(),
-//         displayQty: factor ? g.quantity / factor : g.quantity
-//       };
-//     });
-
-//     res.json(converted);
-//   } catch (err) {
-//     console.error("Error fetching groceries:", err);
-//     res.status(500).json({ msg: "Server error" });
-//   }
-// });
 
 router.get("/", async (req,res)=>{
 
@@ -71,43 +53,15 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// router.post("/", async (req, res) => {
-//   try {
-//     const {
-//       name,
-//       purchaseUnit,
-//       baseUnit,
-//       conversionFactor,
-//       quantity,
-//       lastPurchasedDate
-//     } = req.body;
-
-//     const baseQty = quantity * conversionFactor;
-
-//     const grocery = await Grocery.create({
-//       name,
-//       purchaseUnit,
-//       baseUnit,
-//       conversionFactor,
-//       quantity: baseQty, 
-//       lastPurchasedDate,
-//       lastStockUpdatedDate: new Date()
-//     });
-
-//     res.json(grocery);
-//   } catch (err) {
-//     console.error("CREATE ERROR:", err);
-//     res.status(500).json({ msg: "Create failed" });
-//   }
-// });
-
 router.post("/", async (req,res)=>{
   try{
 
     const { name, unitId, quantity, lastPurchasedDate } = req.body;
 
     const unit = await Unit.findById(unitId);
-
+   if (!unit) {
+  return res.status(400).json({ msg: "Invalid unit selected" });
+  }
     const baseQty = quantity * unit.conversionFactor;
 
     const grocery = await Grocery.create({
@@ -130,32 +84,6 @@ router.delete("/:id", async (req, res) => {
   res.json({ message: "Grocery deleted" });
 });
 
-// let baseUnit = "";
-// let factor = conversionFactor;
-
-// if (purchaseUnit === "Litre") {
-//   baseUnit = "ml";
-//   factor = 1000;
-// }
-
-// if (purchaseUnit === "Kilogram") {
-//   baseUnit = "g";
-//   factor = 1000;
-// }
-
-// if (purchaseUnit === "Gram") {
-//   baseUnit = "g";
-//   factor = 1;
-// }
-
-// if (purchaseUnit === "Millilitre") {
-//   baseUnit = "ml";
-//   factor = 1;
-// }
-
-// if (purchaseUnit === "Packets") {
-//   baseUnit = "piece";
-// }
 
 router.post("/import", upload.single("file"), async (req, res) => {
   try {
