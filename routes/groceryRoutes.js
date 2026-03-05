@@ -53,10 +53,19 @@ router.get("/", async (req,res)=>{
       }
 
       const factor = g.unit.conversionFactor || 1;
+      
+      let displayQty;
+
+if(g.unit.displayUnit === g.unit.reduceUnit){
+  displayQty = g.quantity;
+}else{
+  displayQty = g.quantity / g.unit.conversionFactor;
+}
 
       return {
         ...g.toObject(),
-        displayQty: g.quantity / factor,
+        // displayQty: g.quantity / factor,
+        displayQty,
         purchaseUnit: g.unit.purchaseUnit,
         displayUnit: g.unit.displayUnit,
         reduceUnit: g.unit.reduceUnit
