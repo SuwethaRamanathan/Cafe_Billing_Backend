@@ -8,24 +8,47 @@ const router = express.Router();
 
 const upload = multer({ dest: "uploads/" });
 
-router.get("/", async (req, res) => {
-  try {
-    const groceries = await Grocery.find();
+// router.get("/", async (req, res) => {
+//   try {
+//     const groceries = await Grocery.find();
 
-    const converted = groceries.map(g => {
-      const factor = g.conversionFactor || 1;   
+//     const converted = groceries.map(g => {
+//       const factor = g.conversionFactor || 1;   
 
-      return {
-        ...g.toObject(),
-        displayQty: factor ? g.quantity / factor : g.quantity
-      };
-    });
+//       return {
+//         ...g.toObject(),
+//         displayQty: factor ? g.quantity / factor : g.quantity
+//       };
+//     });
 
-    res.json(converted);
-  } catch (err) {
-    console.error("Error fetching groceries:", err);
-    res.status(500).json({ msg: "Server error" });
-  }
+//     res.json(converted);
+//   } catch (err) {
+//     console.error("Error fetching groceries:", err);
+//     res.status(500).json({ msg: "Server error" });
+//   }
+// });
+
+router.get("/", async (req,res)=>{
+
+  const groceries = await Grocery.find()
+  .populate("unit");
+
+  const converted = groceries.map(g=>{
+
+    const factor = g.unit.conversionFactor;
+
+    return {
+      ...g.toObject(),
+      displayQty: g.quantity / factor,
+      purchaseUnit: g.unit.purchaseUnit,
+      displayUnit: g.unit.displayUnit,
+      reduceUnit: g.unit.reduceUnit
+    }
+
+  });
+
+  res.json(converted);
+
 });
 
 router.put("/:id", async (req, res) => {
@@ -48,33 +71,57 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-router.post("/", async (req, res) => {
-  try {
-    const {
-      name,
-      purchaseUnit,
-      baseUnit,
-      conversionFactor,
-      quantity,
-      lastPurchasedDate
-    } = req.body;
+// router.post("/", async (req, res) => {
+//   try {
+//     const {
+//       name,
+//       purchaseUnit,
+//       baseUnit,
+//       conversionFactor,
+//       quantity,
+//       lastPurchasedDate
+//     } = req.body;
 
-    const baseQty = quantity * conversionFactor;
+//     const baseQty = quantity * conversionFactor;
+
+//     const grocery = await Grocery.create({
+//       name,
+//       purchaseUnit,
+//       baseUnit,
+//       conversionFactor,
+//       quantity: baseQty, 
+//       lastPurchasedDate,
+//       lastStockUpdatedDate: new Date()
+//     });
+
+//     res.json(grocery);
+//   } catch (err) {
+//     console.error("CREATE ERROR:", err);
+//     res.status(500).json({ msg: "Create failed" });
+//   }
+// });
+
+router.post("/", async (req,res)=>{
+  try{
+
+    const { name, unitId, quantity, lastPurchasedDate } = req.body;
+
+    const unit = await Unit.findById(unitId);
+
+    const baseQty = quantity * unit.conversionFactor;
 
     const grocery = await Grocery.create({
       name,
-      purchaseUnit,
-      baseUnit,
-      conversionFactor,
-      quantity: baseQty, 
-      lastPurchasedDate,
-      lastStockUpdatedDate: new Date()
+      unit: unitId,
+      quantity: baseQty,
+      lastPurchasedDate
     });
 
     res.json(grocery);
-  } catch (err) {
-    console.error("CREATE ERROR:", err);
-    res.status(500).json({ msg: "Create failed" });
+
+  }catch(err){
+    console.error(err);
+    res.status(500).json({msg:"Create failed"});
   }
 });
 
@@ -127,7 +174,9 @@ router.post("/import", upload.single("file"), async (req, res) => {
       const name = row.getCell(1).text?.trim();
       const unit = row.getCell(2).text?.trim();
       const quantity = Number(row.getCell(3).text);
-
+      // const purchaseUnit = row.getCell(2).text?.trim();
+      // const baseUnit = row.getCell(2).text?.trim();
+      // const conversionFactor = Number(row.getCell(3).text);
       const lastPurchasedDateText = row.getCell(4).text?.trim();
       const lastStockUpdatedDateText = row.getCell(5).text?.trim();
 
