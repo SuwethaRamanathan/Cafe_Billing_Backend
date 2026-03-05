@@ -12,6 +12,7 @@ import categoryRoutes from "./routes/category.js";
 import groceryRoutes from "./routes/groceryRoutes.js";
 import startRawMaterialScheduler from "./utils/rawMaterialScheduler.js";
 import settingsRoutes from "./routes/settingsRoutes.js"
+import unitRoutes from "./routes/unitRoutes.js";
 
 connectDB(); 
 
@@ -27,7 +28,7 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/auth", auth);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/groceries", groceryRoutes);
-
+app.use("/api/units", unitRoutes);
 app.use("/api/settings", settingsRoutes);
 
 
