@@ -6,21 +6,56 @@ import User from "../models/User.js";
 
 const router = express.Router();
 
+// router.post("/register", async (req, res) => {
+
+//   const { name, email, password, role } = req.body;
+
+//   const hash = await bcrypt.hash(password, 10);
+
+//   const user = await User.create({
+//     name,
+//     email,
+//     password: hash,
+//     role
+//   });
+
+//   res.json({ success: true });
+
+// });
+
 router.post("/register", async (req, res) => {
+  try {
 
-  const { name, email, password, role } = req.body;
+    const { name, email, password, role } = req.body;
 
-  const hash = await bcrypt.hash(password, 10);
+    if (!name || !email || !password || !role) {
+      return res.status(400).json({ msg: "All fields required" });
+    }
 
-  const user = await User.create({
-    name,
-    email,
-    password: hash,
-    role
-  });
+    const exists = await User.findOne({ email });
 
-  res.json({ success: true });
+    if (exists) {
+      return res.status(400).json({ msg: "User already exists" });
+    }
 
+    const hash = await bcrypt.hash(password, 10);
+
+    const user = await User.create({
+      name,
+      email,
+      password: hash,
+      role
+    });
+
+    res.json({
+      success: true,
+      user
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: "Server error" });
+  }
 });
 
 router.post("/login", async (req, res) => {
