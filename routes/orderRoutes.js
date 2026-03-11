@@ -46,28 +46,6 @@ router.post("/", async (req, res) => {
       orderDate: new Date()
     });
 
-    // for (let cartItem of items) {
-    //   const item = await Menu.findById(cartItem._id);
-
-    //   item.stock -= cartItem.qty;
-
-    //   if (item.stock < 8 && item.stock > 0 && !item.thresholdAlertSent) {
-    //     await sendThresholdMail(item);
-    //     item.thresholdAlertSent = true;
-    //   }
-
-    //   if (item.stock === 0 && !item.outOfStockAlertSent) {
-    //     await sendOutOfStockMail(item);
-    //     item.outOfStockAlertSent = true;
-    //   }
-
-    //   if (item.stock > 8) {
-    //     item.thresholdAlertSent = false;
-    //     item.outOfStockAlertSent = false;
-    //   }
-
-    //   await item.save();
-    // }
 
     for (let cartItem of items) {
   const menuItem = await Menu.findById(cartItem._id);

@@ -1,25 +1,50 @@
+// import jwt from "jsonwebtoken";
+
+// export const verifyToken = (req, res, next) => {
+
+//   const header = req.headers.authorization;
+
+//   if (!header)
+//     return res.status(401).json({ msg: "No token" });
+
+//   const token = header.split(" ")[1];
+
+//     const data = jwt.verify(token, "SECRET123");
+
+//     req.user = data;
+
+//     next();
+// };
+
+// export const isAdmin = (req, res, next) => {
+
+//   if (req.user.role !== "admin")
+//     return res.status(403).json({ msg: "Admin only" });
+
+//   next();
+// };
+
 import jwt from "jsonwebtoken";
 
 export const verifyToken = (req, res, next) => {
-
   const header = req.headers.authorization;
-
-  if (!header)
-    return res.status(401).json({ msg: "No token" });
+  if (!header) return res.status(401).json({ msg: "No token" });
 
   const token = header.split(" ")[1];
-
-    const data = jwt.verify(token, "SECRET123");
-
-    req.user = data;
-
-    next();
+  const data = jwt.verify(token, "SECRET123");
+  req.user = data;
+  next();
 };
 
 export const isAdmin = (req, res, next) => {
-
-  if (req.user.role !== "admin")
+  if (req.user.role !== "admin" && req.user.role !== "superadmin")
     return res.status(403).json({ msg: "Admin only" });
+  next();
+};
 
+// Only you (the developer) can access these routes
+export const isSuperAdmin = (req, res, next) => {
+  if (req.user.role !== "superadmin")
+    return res.status(403).json({ msg: "Super admin only" });
   next();
 };
