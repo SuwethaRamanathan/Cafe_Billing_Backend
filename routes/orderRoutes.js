@@ -71,7 +71,9 @@ router.post("/", async (req, res) => {
 
     for (let cartItem of items) {
   const menuItem = await Menu.findById(cartItem._id);
-
+  
+  menuItem.stock -= cartItem.qty;
+  
   await reduceStock(menuItem, cartItem.qty);
 
   if (menuItem.stock < 8 && menuItem.stock > 0 && !menuItem.thresholdAlertSent) {
@@ -92,10 +94,10 @@ router.post("/", async (req, res) => {
   await menuItem.save();
 }
    
-    for (let cartItem of items) {
-  const menuItem = await Menu.findById(cartItem._id);
-  await reduceStock(menuItem, cartItem.qty);
-}
+//     for (let cartItem of items) {
+//   const menuItem = await Menu.findById(cartItem._id);
+//   await reduceStock(menuItem, cartItem.qty);
+// }
 
 
     res.json({
