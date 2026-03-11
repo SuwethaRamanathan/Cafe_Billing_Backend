@@ -73,79 +73,81 @@
 
 import express from "express";
 import Category from "../models/Category.js";
-import { verifyToken, isAdmin } from "../middleware/auth.js";
 import Menu from "../models/Menu.js";
+import { verifyToken, isAdmin } from "../middleware/auth.js";
+import mongoose from "mongoose";
 
 const router = express.Router();
 
-function buildNameObject(nameInput, lang = "en") {
-  if (typeof nameInput === "object" && nameInput !== null) return nameInput;
-  const obj = { en: "", ta: "", hi: "" };
-  obj[lang] = nameInput;
-  return obj;
-}
-
-// GET all categories
+// GET — raw collection
 router.get("/", async (req, res) => {
-  // Use raw collection to bypass Mongoose casting of name field
-  const categories = await Category.collection.find({}).sort({ "name.en": 1 }).toArray();
+  const categories = await Category.collection.find({}).toArray();
   res.json(categories);
 });
 
-// POST - add new category
+// POST — add category
 router.post("/", verifyToken, isAdmin, async (req, res) => {
   const { name, nameLang = "en" } = req.body;
   if (!name) return res.status(400).json({ msg: "Category name required" });
 
-  const nameObj = buildNameObject(name, nameLang);
+  let nameObj;
+  if (typeof name === "object") {
+    nameObj = { en: name.en || "", ta: name.ta || "", hi: name.hi || "" };
+  } else {
+    nameObj = { en: "", ta: "", hi: "" };
+    nameObj[nameLang] = name;
+  }
 
-  // Check for duplicate in the entered language
-  const exists = await Category.findOne({ [`name.${nameLang}`]: name });
-  if (exists) return res.status(400).json({ msg: "Category already exists" });
+  // Check duplicate in entered language
+  const exists = await Category.collection.findOne({ [`name.${nameLang}`]: name });
+  if (exists) return res.status(400).json({ msg: "Category already exists, name a new category" });
 
-  const category = await Category.create({ name: nameObj });
-  res.json(category);
+  const result = await Category.collection.insertOne({ name: nameObj });
+  res.json({ _id: result.insertedId, name: nameObj });
 });
 
-// PUT - edit category name
+// PUT — edit category
 router.put("/:id", verifyToken, isAdmin, async (req, res) => {
   const { name, nameLang = "en" } = req.body;
   if (!name) return res.status(400).json({ msg: "Category name required" });
 
+  const _id = new mongoose.Types.ObjectId(req.params.id);
+
   // Check duplicate excluding self
-  const exists = await Category.findOne({
+  const exists = await Category.collection.findOne({
     [`name.${nameLang}`]: name,
-    _id: { $ne: req.params.id }
+    _id: { $ne: _id }
   });
   if (exists) return res.status(400).json({ msg: "Category already exists" });
 
-  // Only update the specific language field, keep others
-  const category = await Category.findByIdAndUpdate(
-    req.params.id,
-    { [`name.${nameLang}`]: name },
-    { new: true }
+  await Category.collection.updateOne(
+    { _id },
+    { $set: { [`name.${nameLang}`]: name } }
   );
-  res.json(category);
+
+  const updated = await Category.collection.findOne({ _id });
+  res.json(updated);
 });
 
-// DELETE - only if no menu items use this category
+// DELETE
 router.delete("/:id", verifyToken, isAdmin, async (req, res) => {
-  const category = await Category.findById(req.params.id);
+  const _id = new mongoose.Types.ObjectId(req.params.id);
+  const category = await Category.collection.findOne({ _id });
   if (!category) return res.status(404).json({ msg: "Category not found" });
 
-  // Check against all language versions of the category name
-  const catNames = Object.values(category.name).filter(Boolean);
-  const itemsExist = await Menu.exists({ category: { $in: catNames } });
+  // Check if any menu items use this category (stored as English name string)
+  const catEnName = typeof category.name === "object" ? category.name.en : category.name;
+  const itemsExist = await Menu.collection.findOne({ category: catEnName });
 
-  if (itemsExist) {
+  if (itemsExist)
     return res.status(400).json({ msg: "Cannot delete category with items inside" });
-  }
 
-  await category.deleteOne();
+  await Category.collection.deleteOne({ _id });
   res.json({ success: true });
 });
 
 export default router;
+
 
 
 
@@ -165,7 +167,8 @@ export default router;
 
 // // GET all categories
 // router.get("/", async (req, res) => {
-//   const categories = await Category.find();
+//   // Use raw collection to bypass Mongoose casting of name field
+//   const categories = await Category.collection.find({}).sort({ "name.en": 1 }).toArray();
 //   res.json(categories);
 // });
 
@@ -223,3 +226,80 @@ export default router;
 // });
 
 // export default router;
+
+
+
+// // import express from "express";
+// // import Category from "../models/Category.js";
+// // import { verifyToken, isAdmin } from "../middleware/auth.js";
+// // import Menu from "../models/Menu.js";
+
+// // const router = express.Router();
+
+// // function buildNameObject(nameInput, lang = "en") {
+// //   if (typeof nameInput === "object" && nameInput !== null) return nameInput;
+// //   const obj = { en: "", ta: "", hi: "" };
+// //   obj[lang] = nameInput;
+// //   return obj;
+// // }
+
+// // // GET all categories
+// // router.get("/", async (req, res) => {
+// //   const categories = await Category.find();
+// //   res.json(categories);
+// // });
+
+// // // POST - add new category
+// // router.post("/", verifyToken, isAdmin, async (req, res) => {
+// //   const { name, nameLang = "en" } = req.body;
+// //   if (!name) return res.status(400).json({ msg: "Category name required" });
+
+// //   const nameObj = buildNameObject(name, nameLang);
+
+// //   // Check for duplicate in the entered language
+// //   const exists = await Category.findOne({ [`name.${nameLang}`]: name });
+// //   if (exists) return res.status(400).json({ msg: "Category already exists" });
+
+// //   const category = await Category.create({ name: nameObj });
+// //   res.json(category);
+// // });
+
+// // // PUT - edit category name
+// // router.put("/:id", verifyToken, isAdmin, async (req, res) => {
+// //   const { name, nameLang = "en" } = req.body;
+// //   if (!name) return res.status(400).json({ msg: "Category name required" });
+
+// //   // Check duplicate excluding self
+// //   const exists = await Category.findOne({
+// //     [`name.${nameLang}`]: name,
+// //     _id: { $ne: req.params.id }
+// //   });
+// //   if (exists) return res.status(400).json({ msg: "Category already exists" });
+
+// //   // Only update the specific language field, keep others
+// //   const category = await Category.findByIdAndUpdate(
+// //     req.params.id,
+// //     { [`name.${nameLang}`]: name },
+// //     { new: true }
+// //   );
+// //   res.json(category);
+// // });
+
+// // // DELETE - only if no menu items use this category
+// // router.delete("/:id", verifyToken, isAdmin, async (req, res) => {
+// //   const category = await Category.findById(req.params.id);
+// //   if (!category) return res.status(404).json({ msg: "Category not found" });
+
+// //   // Check against all language versions of the category name
+// //   const catNames = Object.values(category.name).filter(Boolean);
+// //   const itemsExist = await Menu.exists({ category: { $in: catNames } });
+
+// //   if (itemsExist) {
+// //     return res.status(400).json({ msg: "Cannot delete category with items inside" });
+// //   }
+
+// //   await category.deleteOne();
+// //   res.json({ success: true });
+// // });
+
+// // export default router;
