@@ -18,10 +18,12 @@ router.post("/", async (req, res) => {
       const dbItem = await Menu.findById(cartItem._id);
       if (!dbItem || dbItem.stock < cartItem.qty) {
         return res.status(400).json({
-          msg: `Insufficient stock for ${dbItem?.name}`
+          msg: `Insufficient stock for ${dbItem?.name|| "item"}`
         });
       }
     }
+
+    
 
     const todayStart = new Date();
     todayStart.setHours(0,0,0,0);
@@ -44,65 +46,57 @@ router.post("/", async (req, res) => {
       orderDate: new Date()
     });
 
+    // for (let cartItem of items) {
+    //   const item = await Menu.findById(cartItem._id);
+
+    //   item.stock -= cartItem.qty;
+
+    //   if (item.stock < 8 && item.stock > 0 && !item.thresholdAlertSent) {
+    //     await sendThresholdMail(item);
+    //     item.thresholdAlertSent = true;
+    //   }
+
+    //   if (item.stock === 0 && !item.outOfStockAlertSent) {
+    //     await sendOutOfStockMail(item);
+    //     item.outOfStockAlertSent = true;
+    //   }
+
+    //   if (item.stock > 8) {
+    //     item.thresholdAlertSent = false;
+    //     item.outOfStockAlertSent = false;
+    //   }
+
+    //   await item.save();
+    // }
+
     for (let cartItem of items) {
-      const item = await Menu.findById(cartItem._id);
+  const menuItem = await Menu.findById(cartItem._id);
 
-      item.stock -= cartItem.qty;
+  await reduceStock(menuItem, cartItem.qty);
 
-      if (item.stock < 8 && item.stock > 0 && !item.thresholdAlertSent) {
-        await sendThresholdMail(item);
-        item.thresholdAlertSent = true;
-      }
+  if (menuItem.stock < 8 && menuItem.stock > 0 && !menuItem.thresholdAlertSent) {
+    await sendThresholdMail(menuItem);
+    menuItem.thresholdAlertSent = true;
+  }
 
-      if (item.stock === 0 && !item.outOfStockAlertSent) {
-        await sendOutOfStockMail(item);
-        item.outOfStockAlertSent = true;
-      }
+  if (menuItem.stock === 0 && !menuItem.outOfStockAlertSent) {
+    await sendOutOfStockMail(menuItem);
+    menuItem.outOfStockAlertSent = true;
+  }
 
-      if (item.stock > 8) {
-        item.thresholdAlertSent = false;
-        item.outOfStockAlertSent = false;
-      }
+  if (menuItem.stock > 8) {
+    menuItem.thresholdAlertSent = false;
+    menuItem.outOfStockAlertSent = false;
+  }
 
-      await item.save();
-    }
+  await menuItem.save();
+}
    
     for (let cartItem of items) {
   const menuItem = await Menu.findById(cartItem._id);
   await reduceStock(menuItem, cartItem.qty);
 }
 
-    // const ingredientTotals = {};
-
-    
-    // for (let cartItem of items) {
-    //   const menuItem = await Menu.findById(cartItem._id)
-    //     .populate("recipe.grocery");
-
-    //   for (let ing of menuItem.recipe) {
-    //     const gid = ing.grocery._id.toString();
-    //     const usedQty = ing.qty * cartItem.qty;
-
-    //     if (!ingredientTotals[gid]) ingredientTotals[gid] = 0;
-    //     ingredientTotals[gid] += usedQty;
-    //   }
-    // }
-
-    // for (let gid in ingredientTotals) {
-    //   const grocery = await Grocery.findById(gid);
-    //   if (grocery.quantity < ingredientTotals[gid]) {
-    //     return res.status(400).json({
-    //       msg: `Insufficient raw material: ${grocery.name}`
-    //     });
-    //   }
-    // }
-
-    // for (let gid in ingredientTotals) {
-    //   await Grocery.findByIdAndUpdate(gid, {
-    //     $inc: { quantity: -ingredientTotals[gid] },
-    //     lastStockUpdatedDate: new Date()
-    //   });
-    // }
 
     res.json({
       success: true,

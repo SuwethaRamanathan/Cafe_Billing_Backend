@@ -9,30 +9,6 @@ const router = express.Router();
 
 const upload = multer({ dest: "uploads/" });
 
-
-// router.get("/", async (req,res)=>{
-
-//   const groceries = await Grocery.find()
-//   .populate("unit");
-
-//   const converted = groceries.map(g=>{
-
-//     const factor = g.unit.conversionFactor;
-
-//     return {
-//       ...g.toObject(),
-//       displayQty: g.quantity / factor,
-//       purchaseUnit: g.unit.purchaseUnit,
-//       displayUnit: g.unit.displayUnit,
-//       reduceUnit: g.unit.reduceUnit
-//     }
-
-//   });
-
-//   res.json(converted);
-
-// });
-
 router.get("/", async (req,res)=>{
 
   try{
