@@ -13,7 +13,7 @@ import groceryRoutes from "./routes/groceryRoutes.js";
 import startRawMaterialScheduler from "./utils/rawMaterialScheduler.js";
 import settingsRoutes from "./routes/settingsRoutes.js"
 import unitRoutes from "./routes/unitRoutes.js";
-
+import superAdminRoutes from "./routes/superAdminRoutes.js";
 connectDB(); 
 
 startRawMaterialScheduler();
@@ -31,7 +31,7 @@ app.use("/api/groceries", groceryRoutes);
 app.use("/api/units", unitRoutes);
 app.use("/api/settings", settingsRoutes);
 
-
+app.use("/api/superadmin", superAdminRoutes);
 const PORT = 5000;
 
 app.listen(PORT, () => {
