@@ -10,15 +10,17 @@ import { reduceStock } from "../utils/reduceStock.js";
 
 const router = express.Router();
 
+
 router.post("/", async (req, res) => {
   try {
     const { items, total } = req.body;
 
     for (let cartItem of items) {
       const dbItem = await Menu.findById(cartItem._id);
+
       if (!dbItem || dbItem.stock < cartItem.qty) {
         return res.status(400).json({
-          msg: `Insufficient stock for ${dbItem?.name|| "item"}`
+          msg: `Insufficient stock for item`
         });
       }
     }
@@ -33,9 +35,39 @@ router.post("/", async (req, res) => {
       orderDate: { $gte: todayStart, $lte: todayEnd }
     }).sort({ orderNumber: -1 });
 
-    const nextOrderNumber = lastOrder
-      ? lastOrder.orderNumber + 1
-      : 1;
+    const nextOrderNumber = lastOrder ? lastOrder.orderNumber + 1 : 1;
+
+    for (let cartItem of items) {
+      const menuItem = await Menu.findById(cartItem._id);
+
+      if(menuItem.recipe && menuItem.recipe.length > 0){
+        await reduceStock(menuItem, cartItem.qty);
+      }
+    }
+
+    for (let cartItem of items) {
+
+      const menuItem = await Menu.findById(cartItem._id);
+
+      menuItem.stock -= cartItem.qty;
+
+      if (menuItem.stock < 8 && menuItem.stock > 0 && !menuItem.thresholdAlertSent) {
+        await sendThresholdMail(menuItem);
+        menuItem.thresholdAlertSent = true;
+      }
+
+      if (menuItem.stock === 0 && !menuItem.outOfStockAlertSent) {
+        await sendOutOfStockMail(menuItem);
+        menuItem.outOfStockAlertSent = true;
+      }
+
+      if (menuItem.stock > 8) {
+        menuItem.thresholdAlertSent = false;
+        menuItem.outOfStockAlertSent = false;
+      }
+
+      await menuItem.save();
+    }
 
     const order = await Order.create({
       items,
@@ -44,27 +76,6 @@ router.post("/", async (req, res) => {
       orderDate: new Date()
     });
 
-
-    for (let cartItem of items) {
-  const menuItem = await Menu.findById(cartItem._id);
-  await reduceStock(menuItem, cartItem.qty);
-   menuItem.stock -= cartItem.qty;
-  if (menuItem.stock < 8 && menuItem.stock > 0 && !menuItem.thresholdAlertSent) {
-    await sendThresholdMail(menuItem);
-    menuItem.thresholdAlertSent = true;
-  }
-  if (menuItem.stock === 0 && !menuItem.outOfStockAlertSent) {
-    await sendOutOfStockMail(menuItem);
-    menuItem.outOfStockAlertSent = true;
-  }
-  if (menuItem.stock > 8) {
-    menuItem.thresholdAlertSent = false;
-    menuItem.outOfStockAlertSent = false;
-  }
-  await menuItem.save();
-}
-
-
     res.json({
       success: true,
       orderNumber: nextOrderNumber,
@@ -72,10 +83,77 @@ router.post("/", async (req, res) => {
     });
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ msg: "Server error" });
+    console.error("ORDER ERROR:", err);
+    res.status(500).json({ msg: err.message || "Server error" });
   }
 });
+
+// router.post("/", async (req, res) => {
+//   try {
+//     const { items, total } = req.body;
+
+//     for (let cartItem of items) {
+//       const dbItem = await Menu.findById(cartItem._id);
+//       if (!dbItem || dbItem.stock < cartItem.qty) {
+//         return res.status(400).json({
+//           msg: `Insufficient stock for ${dbItem?.name|| "item"}`
+//         });
+//       }
+//     }
+
+//     const todayStart = new Date();
+//     todayStart.setHours(0,0,0,0);
+
+//     const todayEnd = new Date();
+//     todayEnd.setHours(23,59,59,999);
+
+//     const lastOrder = await Order.findOne({
+//       orderDate: { $gte: todayStart, $lte: todayEnd }
+//     }).sort({ orderNumber: -1 });
+
+//     const nextOrderNumber = lastOrder
+//       ? lastOrder.orderNumber + 1
+//       : 1;
+
+//     const order = await Order.create({
+//       items,
+//       total,
+//       orderNumber: nextOrderNumber,
+//       orderDate: new Date()
+//     });
+
+
+//     for (let cartItem of items) {
+//   const menuItem = await Menu.findById(cartItem._id);
+//   await reduceStock(menuItem, cartItem.qty);
+//    menuItem.stock -= cartItem.qty;
+//   if (menuItem.stock < 8 && menuItem.stock > 0 && !menuItem.thresholdAlertSent) {
+//     await sendThresholdMail(menuItem);
+//     menuItem.thresholdAlertSent = true;
+//   }
+//   if (menuItem.stock === 0 && !menuItem.outOfStockAlertSent) {
+//     await sendOutOfStockMail(menuItem);
+//     menuItem.outOfStockAlertSent = true;
+//   }
+//   if (menuItem.stock > 8) {
+//     menuItem.thresholdAlertSent = false;
+//     menuItem.outOfStockAlertSent = false;
+//   }
+//   await menuItem.save();
+// }
+
+
+//     res.json({
+//       success: true,
+//       orderNumber: nextOrderNumber,
+//       order
+//     });
+
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ msg: "Server error" });
+//   }
+// });
 
 router.get("/", async (req, res) => {
   const orders = await Order.find().sort({ orderDate: 1 });
