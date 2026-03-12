@@ -224,11 +224,7 @@ import { isMissingTranslations } from "../utils/translate.js";
 
 const router = express.Router();
 
-// ─────────────────────────────────────────────────────────
-// TRANSLATION ROUTES (unchanged from before)
-// ─────────────────────────────────────────────────────────
 
-// GET /api/superadmin/untranslated
 router.get("/untranslated", verifyToken, isSuperAdmin, async (req, res) => {
   try {
     const [menuItems, categories, groceries] = await Promise.all([
@@ -254,7 +250,6 @@ router.get("/untranslated", verifyToken, isSuperAdmin, async (req, res) => {
   }
 });
 
-// PUT /api/superadmin/save-translation
 // Browser translates via MyMemory, then sends completed {en, ta, hi} here to save
 router.put("/save-translation", verifyToken, isSuperAdmin, async (req, res) => {
   try {
@@ -277,8 +272,6 @@ router.put("/save-translation", verifyToken, isSuperAdmin, async (req, res) => {
   }
 });
 
-// PUT /api/superadmin/manual-translate
-// Super admin manually edits a single language cell
 router.put("/manual-translate", verifyToken, isSuperAdmin, async (req, res) => {
   try {
     const { id, type, lang, value } = req.body;
@@ -296,8 +289,6 @@ router.put("/manual-translate", verifyToken, isSuperAdmin, async (req, res) => {
   }
 });
 
-// POST /api/superadmin/migrate
-// One-time: converts old plain-string names → { en, ta, hi }
 router.post("/migrate", verifyToken, isSuperAdmin, async (req, res) => {
   try {
     let migrated = 0;
@@ -324,15 +315,8 @@ router.post("/migrate", verifyToken, isSuperAdmin, async (req, res) => {
   }
 });
 
-// ─────────────────────────────────────────────────────────
-// USER MANAGEMENT ROUTES (new)
-// ─────────────────────────────────────────────────────────
-
-// GET /api/superadmin/users
-// Returns all users (excluding superadmin passwords)
 router.get("/users", verifyToken, isSuperAdmin, async (req, res) => {
   try {
-    // Return all users but never send password hashes to frontend
     const users = await User.find({}).select("-password").sort({ createdAt: -1 });
     res.json(users);
   } catch (err) {
@@ -341,15 +325,12 @@ router.get("/users", verifyToken, isSuperAdmin, async (req, res) => {
   }
 });
 
-// DELETE /api/superadmin/users/:id
-// Remove a user (superadmin cannot be deleted)
 router.delete("/users/:id", verifyToken, isSuperAdmin, async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
     if (!user)
       return res.status(404).json({ msg: "User not found" });
 
-    // Prevent deleting superadmin accounts
     if (user.role === "superadmin")
       return res.status(403).json({ msg: "Cannot delete a superadmin account" });
 
@@ -361,13 +342,10 @@ router.delete("/users/:id", verifyToken, isSuperAdmin, async (req, res) => {
   }
 });
 
-// PUT /api/superadmin/users/:id/role
-// Change a user's role (admin ↔ cashier only, cannot touch superadmin)
 router.put("/users/:id/role", verifyToken, isSuperAdmin, async (req, res) => {
   try {
     const { role } = req.body;
 
-    // Only allow assigning admin or cashier — never superadmin via this route
     if (!["admin", "cashier"].includes(role))
       return res.status(400).json({ msg: "Role must be admin or cashier" });
 
@@ -388,8 +366,6 @@ router.put("/users/:id/role", verifyToken, isSuperAdmin, async (req, res) => {
   }
 });
 
-// PUT /api/superadmin/users/:id/reset-password
-// Reset a user's password (useful if they forget it)
 router.put("/users/:id/reset-password", verifyToken, isSuperAdmin, async (req, res) => {
   try {
     const { newPassword } = req.body;

@@ -23,8 +23,6 @@ router.post("/", async (req, res) => {
       }
     }
 
-    
-
     const todayStart = new Date();
     todayStart.setHours(0,0,0,0);
 
@@ -49,33 +47,22 @@ router.post("/", async (req, res) => {
 
     for (let cartItem of items) {
   const menuItem = await Menu.findById(cartItem._id);
-  
-  menuItem.stock -= cartItem.qty;
-  
   await reduceStock(menuItem, cartItem.qty);
-
+   menuItem.stock -= cartItem.qty;
   if (menuItem.stock < 8 && menuItem.stock > 0 && !menuItem.thresholdAlertSent) {
     await sendThresholdMail(menuItem);
     menuItem.thresholdAlertSent = true;
   }
-
   if (menuItem.stock === 0 && !menuItem.outOfStockAlertSent) {
     await sendOutOfStockMail(menuItem);
     menuItem.outOfStockAlertSent = true;
   }
-
   if (menuItem.stock > 8) {
     menuItem.thresholdAlertSent = false;
     menuItem.outOfStockAlertSent = false;
   }
-
   await menuItem.save();
 }
-   
-//     for (let cartItem of items) {
-//   const menuItem = await Menu.findById(cartItem._id);
-//   await reduceStock(menuItem, cartItem.qty);
-// }
 
 
     res.json({
