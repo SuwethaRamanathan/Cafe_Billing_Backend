@@ -16,7 +16,7 @@ import unitRoutes from "./routes/unitRoutes.js";
 import superAdminRoutes from "./routes/superAdminRoutes.js";
 connectDB(); 
 
-startRawMaterialScheduler();
+// startRawMaterialScheduler();
 
 const app = express();
 
