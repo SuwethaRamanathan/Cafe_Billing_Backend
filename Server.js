@@ -37,7 +37,7 @@ app.options("*", cors());
 app.use(express.json());
 
 // app.use(cors());
-app.use(express.json()); 
+// app.use(express.json()); 
 
 app.use("/api/menu", menuRoutes);
 app.use("/api/orders", orderRoutes);
