@@ -105,7 +105,7 @@ import express from "express";
 import mongoose from "mongoose";
 import Menu from "../models/Menu.js";
 import { verifyToken, isAdmin } from "../middleware/auth.js";
-import { syncQueue } from "../utils/queueHelper.js";
+import { syncQueue } from "../utils/Queuehelper.js";
 
 const router = express.Router();
 
@@ -240,7 +240,7 @@ router.delete("/:id", verifyToken, isAdmin, async (req, res) => {
     await Menu.collection.deleteOne({ _id });
 
     // Remove from translation queue if present
-    const { syncQueue: sq } = await import("../utils/queueHelper.js");
+    const { syncQueue: sq } = await import("../utils/Queuehelper.js");
     // Simplest approach: just delete from queue directly
     const TranslationQueue = (await import("../models/TranslationQueue.js")).default;
     await TranslationQueue.deleteOne({ itemId: _id, type: "menu" });

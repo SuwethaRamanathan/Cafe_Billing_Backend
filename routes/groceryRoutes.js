@@ -6,7 +6,7 @@ import TranslationQueue from "../models/TranslationQueue.js";
 import multer from "multer";
 import ExcelJS from "exceljs";
 import fs from "fs";
-import { syncQueue } from "../utils/queueHelper.js";
+import { syncQueue } from "../utils/Queuehelper.js";
 
 const router = express.Router();
 const upload = multer({ dest: "uploads/" });

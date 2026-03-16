@@ -4,7 +4,7 @@ import Category from "../models/Category.js";
 import Menu from "../models/Menu.js";
 import TranslationQueue from "../models/TranslationQueue.js";
 import { verifyToken, isAdmin } from "../middleware/auth.js";
-import { syncQueue } from "../utils/queueHelper.js";
+import { syncQueue } from "../utils/Queuehelper.js";
 
 const router = express.Router();
 

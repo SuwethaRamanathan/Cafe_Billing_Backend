@@ -7,7 +7,7 @@ import Grocery from "../models/Grocery.js";
 import User from "../models/User.js";
 import TranslationQueue from "../models/TranslationQueue.js";
 import { verifyToken, isSuperAdmin } from "../middleware/auth.js";
-import { syncQueue, isFullyTranslated } from "../utils/queueHelper.js";
+import { syncQueue, isFullyTranslated } from "../utils/Queuehelper.js";
 
 const router = express.Router();
 
