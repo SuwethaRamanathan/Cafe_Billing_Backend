@@ -14,6 +14,7 @@ import startRawMaterialScheduler from "./utils/rawMaterialScheduler.js";
 import settingsRoutes from "./routes/settingsRoutes.js"
 import unitRoutes from "./routes/unitRoutes.js";
 import superAdminRoutes from "./routes/superAdminRoutes.js";
+import TranslationQueue from "./models/TranslationQueue.js";
 connectDB(); 
 
 // startRawMaterialScheduler();
