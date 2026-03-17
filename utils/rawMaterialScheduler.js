@@ -3,7 +3,7 @@ import Grocery from "../models/Grocery.js";
 import getTransporter from "./mailer.js";
 
 const startRawMaterialScheduler = () => {
-  cron.schedule("36 11 * * *", async () => {
+  cron.schedule("20 12 * * *", async () => {
     try {
       console.log(" Sending daily raw material report...");
 
