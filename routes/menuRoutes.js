@@ -109,16 +109,12 @@ import { syncQueue } from "../utils/Queuehelper.js";
 
 const router = express.Router();
 
-// GET — raw collection, bypasses Mongoose schema casting
 router.get("/", async (req, res) => {
   const menu = await Menu.collection.find({}).toArray();
   res.json(menu);
 });
 
-// POST — create menu item
-// After saving, sync the translation queue.
-// If all 3 languages are filled → not queued.
-// If any language is missing    → added to queue for superadmin to translate.
+
 router.post("/", verifyToken, isAdmin, async (req, res) => {
   try {
     const { name, price, stock, category, image, recipe, nameLang = "en" } = req.body;
@@ -126,7 +122,6 @@ router.post("/", verifyToken, isAdmin, async (req, res) => {
     if (Number(stock) < 0)
       return res.status(400).json({ msg: "Stock cannot be negative" });
 
-    // Build multilingual name object
     let nameObj;
     if (typeof name === "object" && name !== null) {
       nameObj = { en: name.en || "", ta: name.ta || "", hi: name.hi || "" };
@@ -152,11 +147,8 @@ router.post("/", verifyToken, isAdmin, async (req, res) => {
     const result = await Menu.collection.insertOne(doc);
     const insertedId = result.insertedId;
 
-    // ── Sync translation queue ──────────────────────────
-    // If any language is missing, this item appears in superadmin queue.
-    // If all 3 are filled (e.g. admin typed all 3), it does NOT appear.
+
     await syncQueue(insertedId, "menu", nameObj);
-    // ────────────────────────────────────────────────────
 
     res.json({ ...doc, _id: insertedId });
   } catch (err) {
@@ -165,9 +157,7 @@ router.post("/", verifyToken, isAdmin, async (req, res) => {
   }
 });
 
-// PUT — edit menu item
-// When the name is edited, the old translations become stale.
-// We reset the queue for this item so superadmin re-translates.
+
 router.put("/:id", verifyToken, isAdmin, async (req, res) => {
   try {
     const { name, nameLang = "en", price, stock, category, image, recipe } = req.body;
@@ -181,27 +171,20 @@ router.put("/:id", verifyToken, isAdmin, async (req, res) => {
         // Admin sent a full { en, ta, hi } object
         nameObj = { en: name.en || "", ta: name.ta || "", hi: name.hi || "" };
       } else {
-        // Admin sent a plain string in one language.
-        // Fetch existing so we don't wipe the other languages.
+        
         const existing = await Menu.collection.findOne({ _id });
         const existingName = (existing && typeof existing.name === "object")
           ? existing.name
           : { en: "", ta: "", hi: "" };
 
-        // When admin edits a name in one language, the other languages
-        // are now potentially outdated — reset them so they go back to queue.
         nameObj = { en: "", ta: "", hi: "", [nameLang]: name };
 
-        // But only reset if the English value actually changed
-        // (to avoid re-queueing on trivial saves like stock/price edits).
+        
         if (nameLang === "en" && name === existingName.en) {
-          // Name didn't change — keep all translations
           nameObj = existingName;
         } else if (nameLang !== "en" && name === existingName[nameLang]) {
-          // Non-English name unchanged — keep existing
           nameObj = existingName;
         }
-        // Otherwise: name changed in this language → other langs outdated → reset
       }
       updateFields.name = nameObj;
     }
@@ -214,16 +197,13 @@ router.put("/:id", verifyToken, isAdmin, async (req, res) => {
 
     await Menu.collection.updateOne({ _id }, { $set: updateFields });
 
-    // ── Sync translation queue ──────────────────────────
-    // If name was updated, sync the queue with the new name object.
-    // If name wasn't part of this update, fetch current name and re-check.
+    
     if (nameObj) {
       await syncQueue(_id, "menu", nameObj);
     } else {
       const updated = await Menu.collection.findOne({ _id });
       if (updated?.name) await syncQueue(_id, "menu", updated.name);
     }
-    // ────────────────────────────────────────────────────
 
     const updated = await Menu.collection.findOne({ _id });
     res.json(updated);
@@ -239,9 +219,7 @@ router.delete("/:id", verifyToken, isAdmin, async (req, res) => {
     const _id = new mongoose.Types.ObjectId(req.params.id);
     await Menu.collection.deleteOne({ _id });
 
-    // Remove from translation queue if present
     const { syncQueue: sq } = await import("../utils/Queuehelper.js");
-    // Simplest approach: just delete from queue directly
     const TranslationQueue = (await import("../models/TranslationQueue.js")).default;
     await TranslationQueue.deleteOne({ itemId: _id, type: "menu" });
 

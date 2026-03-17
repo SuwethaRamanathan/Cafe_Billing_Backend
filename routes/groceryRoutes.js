@@ -128,9 +128,13 @@ router.delete("/:id", async (req, res) => {
 });
 
 // EXPORT Excel
+// 
+
 router.get("/export", async (req, res) => {
   try {
-    const groceries = await Grocery.find();
+
+    const groceries = await Grocery.find().populate("unit");
+
     const workbook  = new ExcelJS.Workbook();
     const sheet     = workbook.addWorksheet("Raw Materials");
 
@@ -138,28 +142,50 @@ router.get("/export", async (req, res) => {
       { header: "Item (EN)", key: "nameEn", width: 20 },
       { header: "Item (TA)", key: "nameTa", width: 20 },
       { header: "Item (HI)", key: "nameHi", width: 20 },
-      { header: "Unit",      key: "unit",   width: 15 },
-      { header: "Quantity",  key: "quantity", width: 15 },
-      { header: "Last Purchased",  key: "lastPurchasedDate",      width: 20 },
-      { header: "Last Updated",    key: "lastStockUpdatedDate",   width: 20 },
+      { header: "Unit", key: "unit", width: 15 },
+      { header: "Quantity", key: "quantity", width: 15 },
+      { header: "Last Purchased", key: "lastPurchasedDate", width: 20 },
+      { header: "Last Updated", key: "lastStockUpdatedDate", width: 20 }
     ];
 
     groceries.forEach(g => {
+
+      const unit = g.unit;
+
+      const displayQty =
+        unit.displayUnit === unit.reduceUnit
+          ? g.quantity
+          : g.quantity / unit.conversionFactor;
+
       sheet.addRow({
         nameEn: g.name?.en || "",
         nameTa: g.name?.ta || "",
         nameHi: g.name?.hi || "",
-        unit:   g.unit,
-        quantity: g.quantity,
-        lastPurchasedDate:      g.lastPurchasedDate      ? new Date(g.lastPurchasedDate).toLocaleDateString("en-GB")      : "",
-        lastStockUpdatedDate:   g.lastStockUpdatedDate   ? new Date(g.lastStockUpdatedDate).toLocaleDateString("en-GB")   : "",
+        unit: unit.purchaseUnit,
+        quantity: displayQty,
+        lastPurchasedDate: g.lastPurchasedDate
+          ? new Date(g.lastPurchasedDate).toLocaleDateString("en-GB")
+          : "",
+        lastStockUpdatedDate: g.lastStockUpdatedDate
+          ? new Date(g.lastStockUpdatedDate).toLocaleDateString("en-GB")
+          : ""
       });
+
     });
 
-    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-    res.setHeader("Content-Disposition", "attachment; filename=Raw_Material_Stock.xlsx");
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=Raw_Material_Stock.xlsx"
+    );
+
     await workbook.xlsx.write(res);
     res.end();
+
   } catch (err) {
     console.error("EXPORT ERROR:", err);
     res.status(500).json({ msg: "Export failed" });
@@ -179,8 +205,17 @@ router.post("/import", upload.single("file"), async (req, res) => {
       const nameEn = row.getCell(1).text?.trim();
       if (!nameEn) continue;
 
-      const unit     = row.getCell(4).text?.trim();
-      const quantity = Number(row.getCell(5).text);
+      // const unit     = row.getCell(4).text?.trim();
+      // const quantity = Number(row.getCell(5).text);
+
+      const unitName = row.getCell(4).text?.trim();
+const displayQty = Number(row.getCell(5).text);
+
+const unit = await Unit.findOne({ purchaseUnit: unitName });
+
+if (!unit) continue;
+
+const baseQty = displayQty * unit.conversionFactor;
       const lastPurchasedDate = row.getCell(6).text?.trim()
         ? new Date(row.getCell(6).text.trim()) : null;
       const lastStockUpdatedDate = row.getCell(7).text?.trim()
@@ -195,14 +230,14 @@ router.post("/import", upload.single("file"), async (req, res) => {
       const existing = await Grocery.findOne({ "name.en": nameEn });
       if (existing) {
         existing.name = nameObj;
-        existing.unit = unit;
-        existing.quantity = quantity;
+        existing.unit = unit._id;
+        existing.quantity = baseQty;
         existing.lastPurchasedDate = lastPurchasedDate;
         existing.lastStockUpdatedDate = lastStockUpdatedDate;
         await existing.save();
         await syncQueue(existing._id, "grocery", nameObj);
       } else {
-        const created = await Grocery.create({ name: nameObj, unit, quantity, lastPurchasedDate, lastStockUpdatedDate });
+        const created = await Grocery.create({ name: nameObj, unit: unit._id, quantity: baseQty, lastPurchasedDate, lastStockUpdatedDate });
         await syncQueue(created._id, "grocery", nameObj);
       }
       count++;

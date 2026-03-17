@@ -17,7 +17,7 @@ import superAdminRoutes from "./routes/superAdminRoutes.js";
 import TranslationQueue from "./models/TranslationQueue.js";
 connectDB(); 
 
-// startRawMaterialScheduler();
+startRawMaterialScheduler();
 
 const app = express();
 

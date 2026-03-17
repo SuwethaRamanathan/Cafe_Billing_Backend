@@ -7,13 +7,13 @@ const startRawMaterialScheduler = () => {
     try {
       console.log(" Sending daily raw material report...");
 
-      const groceries = await Grocery.find();
+      const groceries = await Grocery.find().populate("unit");
       if (!groceries.length) return;
 
       const htmlRows = groceries.map(item => `
   <tr>
-    <td style="padding:10px; border-bottom:1px solid #ddd;">${item.name}</td>
-    <td style="padding:10px; border-bottom:1px solid #ddd;">${item.unit}</td>
+    <td style="padding:10px; border-bottom:1px solid #ddd;">${item.name?.en || ""}</td>
+    <td style="padding:10px; border-bottom:1px solid #ddd;">${item.unit?.displayUnit || ""}</td>
     <td style="padding:10px; border-bottom:1px solid #ddd;"><b>${item.quantity}</b></td>
   </tr>
 `).join("");
